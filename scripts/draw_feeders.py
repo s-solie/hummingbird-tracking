@@ -3,6 +3,7 @@ import cv2
 import json
 import os
 import sys
+import simpleaudio as sa
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog, simpledialog
 from PIL import Image, ImageTk
@@ -12,16 +13,15 @@ import threading
 
 
 def play_alert_sound():
-    """Play a short alert sound when the GUI opens."""
     try:
-        if platform.system() == "Darwin":  # macOS
-            os.system('afplay /System/Library/Sounds/Glass.aiff &')
-        elif platform.system() == "Windows":
-            import winsound
-            winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
-        else:  # Linux or others
-            os.system('paplay /usr/share/sounds/freedesktop/stereo/complete.oga &')
-    except Exception:
+        frequency = 440  # A4
+        fs = 44100  # 44.1kHz sample rate
+        duration = 0.25  # seconds
+        t = np.linspace(0, duration, int(fs * duration), False)
+        tone = np.sin(frequency * 2 * np.pi * t)
+        audio = (tone * 32767).astype(np.int16)
+        sa.play_buffer(audio, 1, 2, fs)
+    except Exception as e:
         pass  # Fail silently if no sound available
 
 
