@@ -1,17 +1,13 @@
-Python 3.14.0 (main, Oct  7 2025, 09:34:52) [Clang 17.0.0 (clang-1700.0.13.3)] on darwin
-Enter "help" below or click "Help" above for more information.
->>> #!/bin/bash
-... set -e
-... trap "echo 'Interrupted. Exiting...'; exit 1" SIGINT SIGTERM
-... 
+#!/bin/bash
+
 ... # Usage: ./run_all.sh <directory>
-... # Example: ./run_all.sh ~/Library/CloudStorage/Dropbox/hummingbirds/
+... # Example: ./run_all.sh ~/Volumes/stoddard/HummingbirdVisionVideos/2023/tracking_test
 ... 
 ... INPUT_DIR="$1"
 ... 
 ... if [ -z "$INPUT_DIR" ]; then
 ...     echo "Usage: ./run_all.sh <directory containing videos>"
-...     echo "Example: ./run_all.sh ~/Library/CloudStorage/Dropbox/hummingbirds/"
+...     echo "Example: ./run_all.sh ~/Volumes/stoddard/HummingbirdVisionVideos/2023/tracking_test"
 ...     exit 1
 ... fi
 ... 
