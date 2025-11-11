@@ -1,11 +1,28 @@
-"""GUI for selecting feeders."""
+"""GUI for selecting feeders and recording start timestamp."""
 import cv2
 import json
 import os
+import sys
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 from PIL import Image, ImageTk
 import argparse
+import platform
+import threading
+
+
+def play_alert_sound():
+    """Play a short alert sound when the GUI opens."""
+    try:
+        if platform.system() == "Darwin":  # macOS
+            os.system('afplay /System/Library/Sounds/Glass.aiff &')
+        elif platform.system() == "Windows":
+            import winsound
+            winsound.MessageBeep(winsound.MB_ICONEXCLAMATION)
+        else:  # Linux or others
+            os.system('paplay /usr/share/sounds/freedesktop/stereo/complete.oga &')
+    except Exception:
+        pass  # Fail silently if no sound available
 
 
 class SelectFeedersGUI:
@@ -14,6 +31,9 @@ class SelectFeedersGUI:
         self.root.title("Feeder Selection GUI")
         self.root.geometry("800x800")
 
+        # Play alert sound in background thread (so GUI doesn't hang)
+        threading.Thread(target=play_alert_sound, daemon=True).start()
+
         self.video_path = video_path
         if not os.path.exists(self.video_path):
             self.show_video_error()
@@ -21,6 +41,7 @@ class SelectFeedersGUI:
 
         video_dir = os.path.dirname(self.video_path)
         self.json_file = os.path.join(video_dir, "feeder_locations.json")
+        self.timestamp_file = os.path.join(video_dir, "start_timestamp.txt")
 
         self.boxes = []
         self.current_box = None
@@ -31,6 +52,30 @@ class SelectFeedersGUI:
         self.load_boxes()
         self.load_video_frame()
         self.create_ui()
+
+        # Ask for timestamp once window is visible
+        self.root.after(1000, self.prompt_timestamp)
+
+    def prompt_timestamp(self):
+        """Ask user for the video start timestamp and save it."""
+        if os.path.exists(self.timestamp_file):
+            return  # Don't overwrite existing timestamp
+
+        ts = simpledialog.askstring(
+            "Start Timestamp",
+            "Enter the START_TIMESTAMP for this video\n"
+            "(e.g., 2024-06-01 08:23:12 or 0:00 for relative start):",
+            parent=self.root,
+        )
+        if ts:
+            try:
+                with open(self.timestamp_file, "w") as f:
+                    f.write(ts.strip() + "\n")
+                messagebox.showinfo("Saved", f"Start timestamp saved to:\n{self.timestamp_file}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not save timestamp:\n{e}")
+        else:
+            messagebox.showwarning("No Timestamp", "No timestamp entered. You can add it manually later.")
 
     def show_video_error(self):
         frame = ttk.Frame(self.root, padding=20)
@@ -48,6 +93,7 @@ class SelectFeedersGUI:
         if file_path:
             self.video_path = file_path
             self.json_file = os.path.join(os.path.dirname(file_path), "feeder_locations.json")
+            self.timestamp_file = os.path.join(os.path.dirname(file_path), "start_timestamp.txt")
             for widget in self.root.winfo_children():
                 widget.destroy()
             self.__init__(self.root, self.video_path)
@@ -81,7 +127,6 @@ class SelectFeedersGUI:
         self.frame = cv2.resize(frame, new_size)
         self.preview = self.frame.copy()
 
-
     def create_ui(self):
         top_frame = ttk.Frame(self.root)
         top_frame.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -98,8 +143,8 @@ class SelectFeedersGUI:
 
         self.update_display()
 
-        ttk.Label(bottom_frame, text="Click and drag on the video above to draw a bounding box around each feeder you want to label."
-, font=("Arial", 12, "bold")).pack(pady=5)
+        ttk.Label(bottom_frame, text="Click and drag on the video above to draw a bounding box around each feeder you want to label.",
+                  font=("Arial", 12, "bold")).pack(pady=5)
 
         paths_frame = ttk.Frame(bottom_frame)
         paths_frame.pack(fill=tk.X, padx=5)
@@ -113,7 +158,6 @@ class SelectFeedersGUI:
             entry.insert(0, value)
             entry.config(state="readonly")
             entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
-
 
         entry_frame = ttk.Frame(bottom_frame)
         entry_frame.pack(fill=tk.X, padx=5, pady=5)
@@ -147,7 +191,6 @@ class SelectFeedersGUI:
 
     def update_display(self):
         self.preview = self.frame.copy()
-
         for box in self.boxes:
             x1, y1, x2, y2 = box["bbox"]
             cv2.rectangle(self.preview, (x1, y1), (x2, y2), (0, 255, 0), 2)

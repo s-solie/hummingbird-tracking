@@ -87,6 +87,7 @@ paho-mqtt==1.6.1
 pandas==2.2.3
 peft==0.11.1
 pillow==11.1.0
+playsound==1.3.0
 platformdirs==4.3.7
 pluggy==1.5.0
 prometheus-fastapi-instrumentator==6.0.0
